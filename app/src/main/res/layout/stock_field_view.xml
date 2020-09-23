@@ -1,0 +1,33 @@
+<merge
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    >
+
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textSize="24sp"
+      android:maxLines="2"
+      tools:text="Price"
+      android:id="@+id/fieldname"
+      android:textColor="@color/text_2"
+      android:layout_centerVertical="true"
+      android:layout_alignParentLeft="true"
+      android:gravity="left"
+      />
+
+  <TextView
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:textSize="24sp"
+      android:maxLines="2"
+      android:id="@+id/fieldvalue"
+      android:textColor="@color/text_1"
+      tools:text="GOOG"
+      android:layout_centerVertical="true"
+      android:ellipsize="none"
+      android:gravity="right"
+      />
+</merge>

@@ -1,0 +1,286 @@
+apply from: "../build.gradle"
+apply plugin: "com.android.application"
+apply plugin: "kotlin-android"
+apply plugin: "kotlin-android-extensions"
+apply plugin: "com.google.gms.google-services"
+apply plugin: "com.google.firebase.crashlytics"
+apply plugin: "com.getkeepsafe.dexcount"
+apply plugin: "kotlin-kapt"
+
+buildscript {
+  repositories {
+    jcenter()
+    mavenCentral()
+    google()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+    maven { url "https://jitpack.io" }
+  }
+  dependencies {
+    classpath "com.google.gms:google-services:4.3.3"
+    classpath "com.google.firebase:firebase-crashlytics-gradle:2.3.0"
+
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    classpath "com.getkeepsafe.dexcount:dexcount-gradle-plugin:0.8.2"
+  }
+}
+
+repositories {
+  jcenter()
+  mavenCentral()
+  maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+  maven { url "https://jitpack.io" }
+  maven { url "https://maven.google.com" }
+  maven { url "http://dl.bintray.com/lukaville/maven" }
+}
+
+dexcount {
+  format = "list"
+  includeClasses = false
+  includeFieldCount = true
+  includeTotalMethodCount = false
+  orderByMethodCount = true
+  verbose = false
+  maxTreeDepth = Integer.MAX_VALUE
+  teamCityIntegration = false
+  teamCitySlug = null
+  runOnEachAssemble = true
+  maxMethodCount = 64000
+}
+
+android {
+  compileSdkVersion 30
+  buildToolsVersion "30.0.0"
+
+  final File versionFile = file("file:version.properties")
+  final Properties versionProps = new Properties()
+  versionProps.load(new FileInputStream(versionFile))
+  def final code = versionProps.getProperty("versionCode").toInteger()
+  def final name = versionProps.getProperty("versionName").toString()
+  def final appIdBase = "com.github.premnirmal.tickerwidget"
+
+  defaultConfig {
+    applicationId appIdBase
+    minSdkVersion 21
+    targetSdkVersion 30
+    testInstrumentationRunner "com.github.premnirmal.ticker.mock.MockTestRunner"
+
+    versionCode = code
+    versionName = name
+    multiDexEnabled true
+
+    javaCompileOptions {
+      annotationProcessorOptions {
+        arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
+      }
+    }
+  }
+
+  sourceSets {
+    main.java.srcDirs += "src/main/kotlin"
+    debug.java.srcDirs += "src/debug/kotlin"
+    release.java.srcDirs += "src/release/kotlin"
+    dev.java.srcDirs += "src/dev/kotlin"
+    prod.java.srcDirs += "src/prod/kotlin"
+    purefoss.java.srcDirs += "src/purefoss/kotlin"
+    String testDir = "src/test/kotlin"
+    test {
+      resources.srcDirs += ["src/test/resources"]
+      java.srcDir testDir
+    }
+  }
+
+  dexOptions {
+    javaMaxHeapSize "2048M"
+  }
+
+  signingConfigs {
+    release {
+      storeFile file("file:keystore.jks")
+
+      final File propsFile = file("file:keystore.properties")
+      if (propsFile.exists()) {
+        final Properties props = new Properties()
+        props.load(new FileInputStream(propsFile))
+        storePassword props.getProperty("key.store.password")
+        keyPassword props.getProperty("key.alias.password")
+        keyAlias props.getProperty("key.alias.alias")
+      }
+    }
+  }
+
+  flavorDimensions "mobile"
+
+  productFlavors {
+    dev {
+      dimension "mobile"
+      applicationId = appIdBase + ".dev"
+    }
+    prod {
+      dimension "mobile"
+      applicationId = appIdBase
+    }
+    purefoss {
+      dimension "mobile"
+      // no analytics, but still using the production packageName
+      applicationId = appIdBase
+    }
+  }
+
+  bundle {
+    density {
+      enableSplit true
+    }
+    abi {
+      enableSplit true
+    }
+    language {
+      enableSplit false
+    }
+  }
+
+  buildTypes {
+    release {
+      debuggable false
+      signingConfig signingConfigs.release
+      minifyEnabled true
+      proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+    }
+    debug {
+      debuggable true
+      versionNameSuffix "-DEBUG"
+      ext.enableCrashlytics = false
+      minifyEnabled true
+      proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+    }
+  }
+
+  testOptions {
+    unitTests.returnDefaultValues = true
+    unitTests.includeAndroidResources = true
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+  kotlinOptions {
+    jvmTarget = JavaVersion.VERSION_1_8.toString()
+  }
+
+  packagingOptions {
+    exclude "META-INF/DEPENDENCIES"
+    exclude "META-INF/NOTICE"
+    exclude "META-INF/LICENSE"
+    exclude "META-INF/LICENSE.txt"
+    exclude "META-INF/NOTICE.txt"
+  }
+}
+
+kapt {
+  useBuildCache = true
+}
+
+ext {
+  LIFECYCLE_VERSION = "2.2.0"
+  DAGGER_VERSION = "2.27"
+  MOCKITO_VERSION = "3.1.0"
+  JUNIT_VERSION = "4.12"
+  RETROFIT_VERSION = "2.7.1"
+  OKHTTP_VERSION = "4.9.0"
+  ROBOLECTRIC_VERSION = "4.3.1"
+  COROUTINES_VERSION = "1.3.9"
+  ROOM_VERSION = "2.2.5"
+  WORK_VERSION = "2.4.0"
+}
+
+dependencies {
+  implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+  implementation "androidx.multidex:multidex:2.0.1"
+
+  implementation "androidx.appcompat:appcompat:1.2.0"
+  implementation "androidx.legacy:legacy-support-v4:1.0.0"
+  implementation "com.google.android.material:material:1.2.1"
+  implementation "androidx.preference:preference:1.1.1"
+  implementation "androidx.browser:browser:1.2.0"
+  implementation "androidx.constraintlayout:constraintlayout:2.0.1"
+
+  implementation "javax.inject:javax.inject:1"
+  implementation "javax.annotation:javax.annotation-api:1.3.2"
+
+  implementation "com.google.dagger:dagger:$DAGGER_VERSION"
+  kapt "com.google.dagger:dagger-compiler:$DAGGER_VERSION"
+
+  implementation "com.squareup.okhttp3:okhttp:$OKHTTP_VERSION"
+  implementation "com.squareup.okhttp3:logging-interceptor:$OKHTTP_VERSION"
+  implementation "com.squareup.retrofit2:retrofit:$RETROFIT_VERSION"
+  implementation "com.squareup.retrofit2:converter-gson:$RETROFIT_VERSION"
+  implementation "com.squareup.retrofit2:converter-simplexml:$RETROFIT_VERSION"
+
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$COROUTINES_VERSION"
+  implementation "androidx.lifecycle:lifecycle-runtime-ktx:$LIFECYCLE_VERSION"
+  implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$LIFECYCLE_VERSION"
+  implementation "androidx.lifecycle:lifecycle-livedata-ktx:$LIFECYCLE_VERSION"
+  implementation "androidx.lifecycle:lifecycle-common-java8:$LIFECYCLE_VERSION"
+  implementation "androidx.work:work-runtime:$WORK_VERSION"
+  implementation "androidx.work:work-runtime-ktx:$WORK_VERSION"
+
+  implementation "com.jakewharton.threetenabp:threetenabp:1.2.4"
+
+  implementation "io.github.inflationx:calligraphy3:3.1.1"
+  implementation "io.github.inflationx:viewpump:2.0.3"
+  implementation "com.jakewharton.timber:timber:4.7.1"
+  implementation "com.github.PhilJay:MPAndroidChart:v3.0.3"
+
+  implementation "androidx.room:room-runtime:$ROOM_VERSION"
+  kapt "androidx.room:room-compiler:$ROOM_VERSION"
+  implementation "androidx.room:room-ktx:$ROOM_VERSION"
+  debugImplementation "com.facebook.stetho:stetho:1.5.1"
+
+  prodImplementation "com.google.firebase:firebase-crashlytics:17.2.1"
+  prodImplementation "com.google.firebase:firebase-analytics:17.5.0"
+
+  debugImplementation "com.squareup.leakcanary:leakcanary-android:2.4"
+
+  testImplementation "junit:junit:$JUNIT_VERSION"
+  testImplementation "org.assertj:assertj-core:3.8.0"
+  testImplementation "org.robolectric:robolectric:$ROBOLECTRIC_VERSION"
+  testImplementation "org.robolectric:shadows-multidex:$ROBOLECTRIC_VERSION"
+  testImplementation "androidx.test:runner:1.3.0"
+  testImplementation "androidx.test:rules:1.3.0"
+  testImplementation "androidx.annotation:annotation:1.1.0"
+  testImplementation "androidx.test:rules:1.3.0"
+  testImplementation "androidx.test:runner:1.3.0"
+  testImplementation "org.threeten:threetenbp:1.4.4"
+  testImplementation "org.mockito:mockito-core:$MOCKITO_VERSION"
+  testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:2.2.0"
+  testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$COROUTINES_VERSION"
+  testImplementation "androidx.room:room-testing:$ROOM_VERSION"
+
+  kaptTest "com.google.dagger:dagger-compiler:$DAGGER_VERSION"
+
+  // Need this to fix a class not found error in tests (https://github.com/robolectric/robolectric/issues/1932)
+  testImplementation "org.khronos:opengl-api:gl1.1-android-2.1_r1"
+}
+
+configurations.all {
+  resolutionStrategy.force "org.objenesis:objenesis:2.5.1"
+  resolutionStrategy.force "org.ow2.asm:asm:7.0"
+  exclude group: "xpp3", module: "xpp3"
+}
+
+android.applicationVariants.all { variant ->
+  if (!variant.name.toLowerCase().contains("prod")) {
+    def googleTask = tasks.findByName("process${variant.name.capitalize()}GoogleServices")
+    def crashlyticsMappingTask = tasks.
+        findByName("uploadCrashlyticsMappingFile${variant.name.capitalize()}")
+    println("flavor: ${variant.name}")
+    println("disabling ${googleTask.name}")
+    googleTask.enabled = false
+    if (crashlyticsMappingTask != null) {
+      println("disabling ${crashlyticsMappingTask.name}")
+      crashlyticsMappingTask.enabled = false
+    }
+  }
+}
+
